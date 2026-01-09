@@ -1,4 +1,6 @@
-# Copyright 2024 The HuggingFace Inc. team. All rights reserved.
+#!/usr/bin/env python
+
+# Copyright 2025 The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +14,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .camera import Camera
-from .configs import CameraConfig, ColorMode, Cv2Rotation
-from .utils import make_cameras_from_configs
-
-# Import camera modules to ensure their configs are registered
-from .opencv import OpenCVCameraConfig
-from .realsense import RealSenseCameraConfig
+from .config_yam_follower_bimanual import YAMFollowerBimanualConfig
+from .yam_follower_bimanual import YAMFollowerBimanual

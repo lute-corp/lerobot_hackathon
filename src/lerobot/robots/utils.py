@@ -60,6 +60,14 @@ def make_robot_from_config(config: RobotConfig) -> Robot:
         from .reachy2 import Reachy2Robot
 
         return Reachy2Robot(config)
+    elif config.type == "yam_follower":
+        from .yam_follower import YAMFollower
+
+        return YAMFollower(config)
+    elif config.type == "yam_follower_bimanual":
+        from .yam_follower_bimanual import YAMFollowerBimanual
+
+        return YAMFollowerBimanual(config)
     elif config.type == "mock_robot":
         from tests.mocks.mock_robot import MockRobot
 
