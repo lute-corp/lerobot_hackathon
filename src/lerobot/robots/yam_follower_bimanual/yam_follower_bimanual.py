@@ -115,8 +115,6 @@ class YAMFollowerBimanual(Robot):
         current_kd = self.robot_left._kd.copy()
 
         # Reduce gripper kp to slow it down (e.g., from 20 to 5)
-        # These are set by Almond guys... questionable if this is good/correct.
-        # TODO: does this match gello_software data collection?
         if self.config.use_almond_kp_kd:
             current_kp[6] = 5.0  # Much gentler position control
             current_kd[6] = 1.0  # Increase damping to smooth it out
