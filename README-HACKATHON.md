@@ -1,3 +1,4 @@
+
 # Policy Deployment Guide
 
 This guide walks you through deploying a trained policy on the YAM robot hardware.
@@ -109,3 +110,82 @@ python -m lerobot.async_inference.robot_client \
 ```
 
 > **Note on `--viz_only` mode:** When set to `true`, the predicted action chunks are displayed in the visualizer but **no commands are sent to the motors**. This allows you to sanity-check your policy before running on the real robot. However, the robot must still be connected—observations (camera images and joint positions) are read from the real hardware to feed into the policy.
+
+## Running Policy on Pre-Gathered Data
+
+If you want to test your policy without access to the robot hardware, you can use the `send_offline_observation.py` script to run inference on pre-gathered observation data (images and motor positions saved to disk).
+
+---
+
+### Prepare Observation Data
+
+Create a directory with your observation data in the following structure:
+
+```
+data_dir/
+├── top.png (or .jpg)
+├── wrist_left.png (or .jpg)
+├── wrist_right.png (or .jpg)
+└── motor_positions.json
+```
+
+The `motor_positions.json` file must contain all 14 joint positions:
+
+```json
+{
+    "joint1_left": 0.1,
+    "joint2_left": 0.2,
+    "joint3_left": 0.3,
+    "joint4_left": 0.4,
+    "joint5_left": 0.5,
+    "joint6_left": 0.6,
+    "gripper_left": 0.0,
+    "joint1_right": 0.1,
+    "joint2_right": 0.2,
+    "joint3_right": 0.3,
+    "joint4_right": 0.4,
+    "joint5_right": 0.5,
+    "joint6_right": 0.6,
+    "gripper_right": 0.0
+}
+```
+
+---
+
+### Terminal 1: Start the Visualizer
+
+Launch the web-browser-based robot arm visualizer:
+
+```bash
+python experimental/yam_visualization/viz.py
+```
+
+---
+
+### Terminal 2: Start the Policy Server
+
+Start the policy inference service:
+
+```bash
+python -m lerobot.async_inference.policy_server --host 127.0.0.1 --port 8080
+```
+
+---
+
+### Terminal 3: Run the Offline Observation Script
+
+Run the script with your observation data and policy configuration:
+
+```bash
+python experimental/send_offline_observation.py \
+    --data_dir=/path/to/observation_data \
+    --server_address=localhost:8080 \
+    --policy_type=act \
+    --pretrained_name_or_path=<PATH_TO_MODEL_WEIGHTS> \
+    --task="fold the white cloth and put it on the left side of the table" \
+    --policy_device=cuda \
+    --actions_per_chunk=50 \
+    --viz_joints_address=<VISUALIZER_IP>:5001
+```
+
+Press `Ctrl+C` to stop the visualization loop.
