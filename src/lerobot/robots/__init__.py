@@ -17,10 +17,3 @@
 from .config import RobotConfig
 from .robot import Robot
 from .utils import make_robot_from_config
-
-# Import robot modules to ensure their configs are registered
-from . import so100_follower
-from . import so101_follower
-from . import bi_so100_follower
-from . import yam_follower
-from . import yam_follower_bimanual
