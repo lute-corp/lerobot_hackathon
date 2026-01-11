@@ -177,3 +177,6 @@ outputs/
 *.urdf
 *.xml
 *.part
+# Exclude .stl and .urdf files in yam visualization from being ignored
+!experimental/yam_visualization/**/*.stl
+!experimental/yam_visualization/**/*.urdf
