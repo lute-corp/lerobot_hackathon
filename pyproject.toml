@@ -76,9 +76,9 @@ dependencies = [
     "pyserial>=3.5,<4.0",
     "wandb>=0.20.0,<0.22.0", # TODO: Bumb dependency (compatible with protobuf)
 
-    "torch>=2.2.1,<2.8.0", # TODO: Bumb dependency
+    "torch",
     "torchcodec>=0.2.1,<0.6.0; sys_platform != 'win32' and (sys_platform != 'linux' or (platform_machine != 'aarch64' and platform_machine != 'arm64' and platform_machine != 'armv7l')) and (sys_platform != 'darwin' or platform_machine != 'x86_64')", # TODO: Bumb dependency
-    "torchvision>=0.21.0,<0.23.0", # TODO: Bumb dependency
+    "torchvision",
 
     "draccus==0.10.0", # TODO: Remove ==
     "gymnasium>=1.1.1,<2.0.0",
@@ -119,7 +119,31 @@ intelrealsense = [
 ]
 phone = ["hebi-py>=2.8.0,<2.12.0", "teleop>=0.1.0,<0.2.0", "fastapi<1.0"]
 
+# ASUS Ascent GX10 / aarch64 Blackwell with CUDA 12.8 (torch.compile support for sm_121a)
+# USAGE: pip install -e .[torch-asus,pi,async,yam]
+# NOTE: only python 3.12 supported 
+torch-asus = [
+    "triton @ https://download.pytorch.org/whl/nightly/triton-3.6.0%2Bgit9844da95-cp310-cp310-linux_aarch64.whl ; python_version == '3.10'",
+    "triton @ https://download.pytorch.org/whl/nightly/triton-3.6.0%2Bgit9844da95-cp311-cp311-linux_aarch64.whl ; python_version == '3.11'",
+    "triton @ https://download.pytorch.org/whl/nightly/triton-3.6.0%2Bgit9844da95-cp312-cp312-linux_aarch64.whl ; python_version == '3.12'",
+    "torch @ https://download.pytorch.org/whl/nightly/cu128/torch-2.11.0.dev20260107%2Bcu128-cp310-cp310-manylinux_2_28_aarch64.whl ; python_version == '3.10'",
+    "torch @ https://download.pytorch.org/whl/nightly/cu128/torch-2.11.0.dev20260107%2Bcu128-cp311-cp311-manylinux_2_28_aarch64.whl ; python_version == '3.11'",
+    "torch @ https://download.pytorch.org/whl/nightly/cu128/torch-2.11.0.dev20260107%2Bcu128-cp312-cp312-manylinux_2_28_aarch64.whl ; python_version == '3.12'",
+    "torchvision @ https://download.pytorch.org/whl/nightly/cu128/torchvision-0.25.0.dev20260107%2Bcu128-cp310-cp310-manylinux_2_28_aarch64.whl ; python_version == '3.10'",
+    "torchvision @ https://download.pytorch.org/whl/nightly/cu128/torchvision-0.25.0.dev20260107%2Bcu128-cp311-cp311-manylinux_2_28_aarch64.whl ; python_version == '3.11'",
+    "torchvision @ https://download.pytorch.org/whl/nightly/cu128/torchvision-0.25.0.dev20260107%2Bcu128-cp312-cp312-manylinux_2_28_aarch64.whl ; python_version == '3.12'",
+    "torchaudio @ https://download.pytorch.org/whl/nightly/cu128/torchaudio-2.11.0.dev20260107%2Bcu128-cp310-cp310-manylinux_2_28_aarch64.whl ; python_version == '3.10'",
+    "torchaudio @ https://download.pytorch.org/whl/nightly/cu128/torchaudio-2.11.0.dev20260107%2Bcu128-cp311-cp311-manylinux_2_28_aarch64.whl ; python_version == '3.11'",
+    "torchaudio @ https://download.pytorch.org/whl/nightly/cu128/torchaudio-2.11.0.dev20260107%2Bcu128-cp312-cp312-manylinux_2_28_aarch64.whl ; python_version == '3.12'",
+]
+yam = [
+    "numpy >= 2.2.6",
+    "i2rt @ git+ssh://git@github.com/lute-corp/i2rt.git@main"
+]
+
+
 # Policies
+pi = ["transformers @ git+https://github.com/huggingface/transformers.git@dcddb970176382c0fcf4521b0c0e6fc15894dfe0"]
 wallx = [
     "transformers==4.49.0",
     "peft==0.17.1",
@@ -127,7 +151,6 @@ wallx = [
     "torchdiffeq==0.2.5",
     "qwen_vl_utils==0.0.11"
 ]
-pi = ["transformers @ git+https://github.com/huggingface/transformers.git@fix/lerobot_openpi"]
 smolvla = ["lerobot[transformers-dep]", "num2words>=0.5.14,<0.6.0", "accelerate>=1.7.0,<2.0.0", "safetensors>=0.4.3,<1.0.0"]
 groot = [
     "lerobot[transformers-dep]",
@@ -168,8 +191,8 @@ all = [
     "lerobot[reachy2]",
     "lerobot[kinematics]",
     "lerobot[intelrealsense]",
-    # "lerobot[wallx]",
-    # "lerobot[pi]", TODO(Pepijn): Update pi to transformers v5
+    "lerobot[wallx]",
+    "lerobot[pi]", #TODO(Pepijn): Update pi to transformers v5
     "lerobot[smolvla]",
     # "lerobot[groot]", TODO(Steven): Gr00t requires specific installation instructions for flash-attn
     "lerobot[xvla]",

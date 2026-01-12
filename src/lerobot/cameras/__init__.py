@@ -15,3 +15,7 @@
 from .camera import Camera
 from .configs import CameraConfig, ColorMode, Cv2Rotation
 from .utils import make_cameras_from_configs
+
+# Import camera modules to ensure their configs are registered
+from .opencv import OpenCVCameraConfig
+from .realsense import RealSenseCameraConfig

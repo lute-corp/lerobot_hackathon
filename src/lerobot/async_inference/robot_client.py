@@ -28,7 +28,10 @@ python src/lerobot/async_inference/robot_client.py \
     --actions_per_chunk=50 \
     --chunk_size_threshold=0.5 \
     --aggregate_fn_name=weighted_average \
-    --debug_visualize_queue_size=True
+    --debug_visualize_queue_size=True \
+    # If you want to visualize without running the actuators
+    --viz_only=true \
+    --viz_joints_address=127.0.0.1:5001
 ```
 """
 
@@ -56,6 +59,8 @@ from lerobot.robots import (  # noqa: F401
     make_robot_from_config,
     omx_follower,
     so_follower,
+    yam_follower,
+    yam_follower_bimanual,
 )
 from lerobot.transport import (
     services_pb2,  # type: ignore
@@ -77,6 +82,24 @@ from .helpers import (
     map_robot_keys_to_lerobot_features,
     visualize_action_queue_size,
 )
+import requests
+
+
+class ViserRobotWrapper:
+    def __init__(self, robot_to_wrap: Robot, joints_address: str):
+        self.robot = robot_to_wrap
+        self.joints_url = f"http://{joints_address}/set_joints"
+
+    def __getattr__(self, name: str) -> Any:
+        # Delegate attributes that could not be found on this class to the wrapped robot class.
+        return getattr(self.robot, name)
+
+    def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
+        # The endpoint that receives the actions is defined in experimental/yam_visualization/viz.py
+        viser_action = {k.removesuffix(".pos"): v for k, v in action.items()}
+        requests.post(self.joints_url, json=viser_action)
+        # Robot actions are not sent - visualization only mode
+        return action
 
 
 class RobotClient:
@@ -91,7 +114,8 @@ class RobotClient:
         """
         # Store configuration
         self.config = config
-        self.robot = make_robot_from_config(config.robot)
+        robot = make_robot_from_config(config.robot)
+        self.robot = ViserRobotWrapper(robot, config.viz_joints_address) if config.viz_only else robot
         self.robot.connect()
 
         lerobot_features = map_robot_keys_to_lerobot_features(self.robot)
@@ -172,6 +196,12 @@ class RobotClient:
     def stop(self):
         """Stop the robot client"""
         self.shutdown_event.set()
+
+        self.logger.debug("Going to zero position before disconnecting")
+        try:
+            self.go_to_zero_position(duration=3.0)
+        except Exception as e:
+            self.logger.warning(f"Failed to go to zero position: {e}")
 
         self.robot.disconnect()
         self.logger.debug("Robot disconnected")
@@ -346,6 +376,13 @@ class RobotClient:
         """Check if there are actions available in the queue"""
         with self.action_queue_lock:
             return not self.action_queue.empty()
+
+    def go_to_zero_position(self, duration: float = 3.0):
+        """Slowly move robot to zero position"""
+        zero_position = {key: 0.0 for key in self.robot.action_features}
+        self.logger.info(f"Moving to zero position over {duration}s...")
+        self.robot.go_to_position(zero_position, duration=duration)
+        self.logger.info("Reached zero position")
 
     def _action_tensor_to_action_dict(self, action_tensor: torch.Tensor) -> dict[str, float]:
         action = {key: action_tensor[i].item() for i, key in enumerate(self.robot.action_features)}
