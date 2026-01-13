@@ -31,22 +31,29 @@ python src/lerobot/async_inference/robot_client.py \
     --debug_visualize_queue_size=True \
     # If you want to visualize without running the actuators
     --viz_only=true \
-    --viz_joints_address=127.0.0.1:5001
+    --viz_joints_address=127.0.0.1:5001 \
+    # Set true if you want to save the initial observation (camera images and joints positions)
+    # in the current working directory under the folder 'initial_observation'
+    --save_initial_observation=true
 ```
 """
 
+import json
 import logging
 import pickle  # nosec
 import threading
 import time
 from collections.abc import Callable
 from dataclasses import asdict
+from pathlib import Path
 from pprint import pformat
 from queue import Queue
 from typing import Any
 
+import cv2
 import draccus
 import grpc
+import numpy as np
 import torch
 
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig  # noqa: F401
@@ -158,6 +165,9 @@ class RobotClient:
         # Use an event for thread-safe coordination
         self.must_go = threading.Event()
         self.must_go.set()  # Initially set - observations qualify for direct processing
+
+        # Flag to track if initial observation has been saved
+        self._initial_observation_saved = False
 
     @property
     def running(self):
@@ -388,6 +398,50 @@ class RobotClient:
         action = {key: action_tensor[i].item() for i, key in enumerate(self.robot.action_features)}
         return action
 
+    def _save_initial_observation(self, raw_observation: RawObservation) -> None:
+        """
+        Save the initial observation to disk for later use with send_offline_observation.py.
+        
+        Saves to 'initial_observation/' directory:
+        - motor_positions.json: Motor positions without the .pos suffix
+        - {camera_name}.jpg: Camera images in RGB format saved as JPEG
+        """
+        # We could save observations as pickle but this would obscure their content
+
+        output_dir = Path("initial_observation")
+        output_dir.mkdir(exist_ok=True)
+        
+        # Extract motor positions (keys ending with .pos)
+        motor_positions = {}
+        for key, value in raw_observation.items():
+            if key.endswith(".pos"):
+                # Remove the .pos suffix for the JSON file
+                motor_name = key.removesuffix(".pos")
+                # Convert numpy types to Python floats for JSON serialization
+                if isinstance(value, (np.floating, np.integer)):
+                    motor_positions[motor_name] = float(value)
+                else:
+                    motor_positions[motor_name] = value
+        
+        # Save motor positions as JSON
+        motor_positions_path = output_dir / "motor_positions.json"
+        with open(motor_positions_path, "w") as f:
+            json.dump(motor_positions, f, indent=2)
+        self.logger.info(f"Saved motor positions to {motor_positions_path}")
+        
+        # Extract and save camera images
+        for key, value in raw_observation.items():
+            if isinstance(value, np.ndarray) and value.ndim == 3:
+                # This is a camera image (H, W, C)
+                image_path = output_dir / f"{key}.jpg"
+                # Convert RGB to BGR for OpenCV
+                image_bgr = cv2.cvtColor(value, cv2.COLOR_RGB2BGR)
+                cv2.imwrite(str(image_path), image_bgr)
+                self.logger.info(f"Saved camera image to {image_path} (shape: {value.shape})")
+        
+        self._initial_observation_saved = True
+        self.logger.info(f"Initial observation saved to {output_dir}/")
+
     def control_loop_action(self, verbose: bool = False) -> dict[str, Any]:
         """Reading and performing actions in local queue"""
 
@@ -444,6 +498,11 @@ class RobotClient:
             )
 
             obs_capture_time = time.perf_counter() - start_time
+
+            # Save the initial observation to disk
+            if self.config.save_initial_observation and not self._initial_observation_saved:
+                assert self.robot.name == "yam_follower_bimanual"
+                self._save_initial_observation(raw_observation)
 
             # If there are no actions left in the queue, the observation must go through processing!
             with self.action_queue_lock:
