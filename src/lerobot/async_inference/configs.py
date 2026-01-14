@@ -151,6 +151,11 @@ class RobotClientConfig:
         metadata={"help": "Address and port of the HTTP endpoint for sending joint positions to visualizer"},
     )
 
+    save_initial_observation: bool = field(
+        default=False,
+        metadata={"help": "If true, the initial observation is saved to the 'initial_observation' folder in the current working directory"},
+    )
+
     @property
     def environment_dt(self) -> float:
         """Environment time step, in seconds"""
