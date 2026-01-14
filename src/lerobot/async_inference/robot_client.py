@@ -406,8 +406,6 @@ class RobotClient:
         - motor_positions.json: Motor positions without the .pos suffix
         - {camera_name}.jpg: Camera images in RGB format saved as JPEG
         """
-        # We could save observations as pickle but this would obscure their content
-
         output_dir = Path("initial_observation")
         output_dir.mkdir(exist_ok=True)
         
@@ -423,7 +421,6 @@ class RobotClient:
                 else:
                     motor_positions[motor_name] = value
         
-        # Save motor positions as JSON
         motor_positions_path = output_dir / "motor_positions.json"
         with open(motor_positions_path, "w") as f:
             json.dump(motor_positions, f, indent=2)
